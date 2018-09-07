@@ -1,5 +1,11 @@
+*.iml
 .gradle
 /local.properties
+/.idea/*
+/app/build
+/app/.externalNativeBuild
+/app/app.iml
 .DS_Store
 /build
 /captures
+.externalNativeBuild
