@@ -68,18 +68,15 @@ public class MainActivity extends AppCompatActivity {
 
         TextView tv = findViewById(R.id.sample_text);
 
-        String key1 = new String(Base64.decode(getGooglePlaceApiKey(), Base64.DEFAULT));
-        String key2 = new String(Base64.decode(getOpenWeatherApiKey(), Base64.DEFAULT));
-
+        //String key1 = new String(Base64.decode(getGooglePlaceApiKey(), Base64.DEFAULT));
+        //String key2 = new String(Base64.decode(getOpenWeatherApiKey(), Base64.DEFAULT));
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        //getLastLocation(tv);
-
 
         MainActivityPermissionsDispatcher.getLastLocationWithPermissionCheck(this, tv);
     }
 
-    //@SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission")
     @NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     void getLastLocation(final TextView textView) {
         if (!isGPSEnabled()) {
@@ -120,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d(TAG, "onRequestPermissionsResult: " + requestCode);
+
         MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
     }
 
