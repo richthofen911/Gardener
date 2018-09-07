@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.GnssStatus;
 import android.location.GpsStatus;
 import android.location.Location;
@@ -29,6 +31,9 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import java.io.IOException;
+import java.util.List;
+
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.OnNeverAskAgain;
 import permissions.dispatcher.OnPermissionDenied;
@@ -43,8 +48,6 @@ import static android.location.GpsStatus.GPS_EVENT_STOPPED;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainAct";
 
-    static final int REQUEST_CODE_ENALBE_GPS = 101;
-
     static {
         System.loadLibrary("keys");
     }
@@ -57,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
     private LocationManager locationManager;
 
+    TextView tv;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,12 +71,18 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        TextView tv = findViewById(R.id.sample_text);
+        tv = findViewById(R.id.sample_text);
 
         //String key1 = new String(Base64.decode(getGooglePlaceApiKey(), Base64.DEFAULT));
         //String key2 = new String(Base64.decode(getOpenWeatherApiKey(), Base64.DEFAULT));
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        if (isGPSEnabled()) {
+            getLastLocation(tv);
+        } else {
+            enableGPS();
+        }
 
         MainActivityPermissionsDispatcher.getLastLocationWithPermissionCheck(this, tv);
     }
@@ -79,16 +90,20 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("MissingPermission")
     @NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)
     void getLastLocation(final TextView textView) {
-        if (!isGPSEnabled()) {
-            enableGPS();
-        }
         mFusedLocationClient
                 .getLastLocation()
                 .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                     @Override
                     public void onSuccess(Location location) {
                         if (location != null) {
-                            textView.setText(location.getLatitude() + ", " + location.getLongitude());
+                            Geocoder geocoder = new Geocoder(getApplicationContext());
+                            try {
+                                List<Address> address = geocoder.getFromLocation(
+                                        location.getLatitude(), location.getLongitude(), 1);
+                                textView.setText(address.get(0).getAddressLine(0));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         } else {
                             textView.setText("location is null");
                         }
@@ -152,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onStarted() {
                     super.onStarted();
+                    Toast.makeText(MainActivity.this, "GPS enabled", Toast.LENGTH_SHORT).show();
+                    getLastLocation(tv);
                 }
 
                 @Override
@@ -165,6 +182,8 @@ public class MainActivity extends AppCompatActivity {
                 public void onGpsStatusChanged(int event) {
                     switch (event) {
                         case GPS_EVENT_STARTED:
+                            Toast.makeText(MainActivity.this, "GPS enabled", Toast.LENGTH_SHORT).show();
+                            getLastLocation(tv);
                             break;
                         case GPS_EVENT_STOPPED:
                             break;
@@ -175,17 +194,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        startActivityForResult(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS), REQUEST_CODE_ENALBE_GPS);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case REQUEST_CODE_ENALBE_GPS:
-                Log.e(TAG, "onActivityResult: " + requestCode + ", " + resultCode);
-                break;
-            default:
-                break;
-        }
+        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
     }
 }
